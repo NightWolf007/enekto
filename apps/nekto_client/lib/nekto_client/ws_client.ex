@@ -1,6 +1,10 @@
 defmodule NektoClient.WSClient do
-  def connect! do
-    Socket.Web.connect! "chat.nekto.me", path: "/websocket"
+  def connect!(host) do
+    Socket.Web.connect! host
+  end
+
+  def connect!(host, args) do
+    Socket.Web.connect! host, args
   end
 
   def send!(socket, action, message \\ %{}) do
@@ -43,5 +47,18 @@ defmodule NektoClient.WSClient do
   def chat_message!(socket, dialog_id, request_id, text) do
     socket
     |> send!("CHAT_MESSAGE", %{dialog_id: dialog_id, request_id: request_id, text: text})
+  end
+
+  def chat_message_read!(socket, dialog_id, message_ids) do
+    socket
+    |> send!("CHAT_MESSAGE_READ", %{dialog_id: dialog_id, message_ids: message_ids})
+  end
+
+  def leave_dialog!(socket, dialog_id) do
+    socket |> send!("LEAVE_DIALOG", %{dialog_id: dialog_id})
+  end
+
+  def out_search_company!(socket) do
+    socket |> send!("OUT_SEARCH_COMPANY")
   end
 end
