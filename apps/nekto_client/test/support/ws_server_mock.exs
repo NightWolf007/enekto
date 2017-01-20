@@ -40,11 +40,75 @@ defmodule Support.WSServerMock do
   end
 
   defp handle_message(socket, %{"action" => "COUNT_ONLINE_USERS"}) do
-    socket |> send_json!(%{notice: "count_online_users", message: %{count: 1000}})
-    socket |> send_json!(%{notice: "count_insearch_users", message: %{count: 100}})
+    socket
+    |> send_json!(%{notice: "count_online_users", message: %{count: 1000}})
+    socket
+    |> send_json!(%{notice: "count_insearch_users", message: %{count: 100}})
+  end
+
+  defp handle_message(socket, %{"action" => "AUTH",
+                                "user_token" => "user_token"}) do
+    socket
+    |> send_json!(%{notice: "success_auth",
+                    message: %{user: %{id: 12345}, open_dialogs: []}})
   end
 
   defp handle_message(socket, %{"action" => "AUTH"}) do
-    socket |> send_json!(%{notice: "success_auth", message: %{user: %{id: 12345}, open_dialogs: []}})
+    socket
+    |> send_json!(%{notice: "success_auth",
+                    message: %{user: %{id: 54321}, open_dialogs: []}})
+  end
+
+  defp handle_message(socket, %{"action" => "SEARCH_COMPANY",
+                                "my_sex" => "M", "wish_sex" => "F",
+                                "my_age_from" => "18", "my_age_to" => "21",
+                                "wish_age" => ["0t17", "18t21"]}) do
+    socket
+    |> send_json!(%{notice: "open_dialog",
+                    message: %{id: 10, uids: [12345, 67890]}})
+  end
+
+  defp handle_message(socket, %{"action" => "SEARCH_COMPANY"}) do
+    socket
+    |> send_json!(%{notice: "open_dialog",
+                    message: %{id: 100, uids: [54321, 98765]}})
+  end
+
+  defp handle_message(socket, %{"action" => "TYPING_A_MESSAGE",
+                                 "dialog_id" => 100, "typing" => true}) do
+    socket
+    |> send_json!(%{notice: "typing_a_message"})
+  end
+
+  defp handle_message(socket, %{"action" => "CHAT_MESSAGE",
+                                "dialog_id" => 100, "text" => "test message 1",
+                                "request_id" => "54321_1"}) do
+    socket
+    |> send_json!(%{notice: "success_send_message", request_id: "54321_1",
+                    message: %{"message_id" => 11111}})
+  end
+
+  defp handle_message(socket, %{"action" => "CHAT_MESSAGE",
+                                "dialog_id" => 100, "text" => "test message 2",
+                                "request_id" => "54321_2"}) do
+    socket
+    |> send_json!(%{notice: "success_send_message", request_id: "54321_2",
+                    message: %{"message_id" => 22222}})
+  end
+
+  defp handle_message(socket, %{"action" => "CHAT_MESSAGE_READ",
+                                "message_ids" => [1,2,3], "dialog_id" => 100}) do
+    socket
+    |> send_json!(%{notice: "chat_message_read"})
+  end
+
+  defp handle_message(socket, %{"action" => "OUT_SEARCH_COMPANY"}) do
+    socket
+    |> send_json!(%{notice: "out_search_company"})
+  end
+
+  defp handle_message(socket, %{"action" => "LEAVE_DIALOG", "dialog_id" => 100}) do
+    socket
+    |> send_json!(%{notice: "success_leave", message: %{dialog_id: 100}})
   end
 end
