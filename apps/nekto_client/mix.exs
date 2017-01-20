@@ -11,7 +11,8 @@ defmodule NektoClient.Mixfile do
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps]
+     deps: deps,
+     test_coverage: [tool: ExCoveralls]]
   end
 
   # Configuration for the OTP application
@@ -38,7 +39,9 @@ defmodule NektoClient.Mixfile do
     [
       {:socket, "~> 0.3"},
       {:httpoison, "~> 0.10.0"},
-      {:poison, "~> 3.0"}
+      {:poison, "~> 3.0"},
+      {:excoveralls, "~> 0.6.1", only: :test},
+      {:bypass, "~> 0.5.1", only: :test}
     ]
   end
 end

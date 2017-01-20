@@ -34,7 +34,9 @@ defmodule Support.WSServerMock do
       {:text, data} ->
         socket |> handle_message(Poison.decode!(data))
       {:ping, _} ->
-        Socket.Web.send!(socket, {:pong, ""})
+        socket |> Socket.Web.send!({:pong, ""})
+      {:pong, _} ->
+        socket |> send_json!(%{notice: "pong"})
     end
     listen(socket)
   end
@@ -110,5 +112,21 @@ defmodule Support.WSServerMock do
   defp handle_message(socket, %{"action" => "LEAVE_DIALOG", "dialog_id" => 100}) do
     socket
     |> send_json!(%{notice: "success_leave", message: %{dialog_id: 100}})
+  end
+
+  ## Handlers for testing goals
+
+  defp handle_message(socket, %{"test" => "ping"}) do
+    socket
+    |> Socket.Web.send!({:ping, ""})
+  end
+
+  defp handle_message(socket, %{"test" => "chat_new_message"}) do
+    socket
+    |> send_json!(%{
+      notice: "chat_new_message",
+      message: %{dialog_id: 100, user: %{id: 98765, name: ""},
+                 text: "test message", message_id: 33333}
+    })
   end
 end

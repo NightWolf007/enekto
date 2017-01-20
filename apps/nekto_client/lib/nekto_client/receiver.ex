@@ -3,22 +3,37 @@ defmodule NektoClient.Receiver do
 
   ## Client API
 
+  @doc """
+  Starts receiver
+  """
   def start_link(socket) do
     GenServer.start_link(__MODULE__, {:ok, socket}, [])
   end
 
+  @doc """
+  Starts listenning loop. After the loop starts you can't call Client API
+  """
   def start_listening(receiver) do
     GenServer.cast(receiver, {:listening})
   end
 
+  @doc """
+  Adds handler to GenEvent
+  """
   def add_handler(receiver, handler, args) do
     GenServer.call(receiver, {:add_handler, handler, args})
   end
 
+  @doc """
+  Remove handler from GenEvent
+  """
   def remove_handler(receiver, handler, args) do
     GenServer.call(receiver, {:remove_handler, handler, args})
   end
 
+  @doc """
+  Returns GenEvent pid
+  """
   def gen_event(receiver) do
     GenServer.call(receiver, {:gen_event})
   end

@@ -1,5 +1,5 @@
 defmodule NektoClientTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   setup do
     {:ok, mock_server} = Support.WSServerMock.start_link
@@ -112,5 +112,31 @@ defmodule NektoClientTest do
     :ok = NektoClient.Sender.leave_dialog(sender)
     assert Support.Handler.wait(gen_event) ==
       {:success_leave, %{"dialog_id" => 100}}
+  end
+
+  test "it sends pong on receiving ping",
+       %{sender: sender, gen_event: gen_event} do
+    Support.Handler.wait(gen_event)
+    NektoClient.Sender.get_socket(sender)
+    |> Socket.Web.send!({:text, Poison.encode!(%{test: "ping"})})
+
+    assert Support.Handler.wait(gen_event) == {:pong, %{}}
+  end
+
+  test "it handles chat_new_message", %{sender: sender, gen_event: gen_event} do
+    Support.Handler.wait(gen_event)
+    :ok = NektoClient.Sender.authenticate(sender, "")
+    Support.Handler.wait(gen_event)
+    :ok = NektoClient.Sender.search(sender, %NektoClient.Model.Search{})
+    Support.Handler.wait(gen_event)
+
+    NektoClient.Sender.get_socket(sender)
+    |> Socket.Web.send!({:text, Poison.encode!(%{test: "chat_new_message"})})
+
+    assert Support.Handler.wait(gen_event) == {
+      :chat_new_message,
+      %NektoClient.Model.Message{id: 33333, dialog_id: 100,
+                                 uid: 98765, text: "test message"}
+    }
   end
 end
