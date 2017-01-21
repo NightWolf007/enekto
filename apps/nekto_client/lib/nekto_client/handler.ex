@@ -1,11 +1,16 @@
 defmodule NektoClient.Handler do
+  @moduledoc """
+  GenEvent handler for setup Sender
+  """
+
   use GenEvent
+  alias NektoClient.Sender
 
   @doc """
   Receives success_auth message and sets user in NektoClient.Sender
   """
   def handle_event({:success_auth, user}, sender) do
-    NektoClient.Sender.set_user(sender, user)
+    Sender.set_user(sender, user)
     {:ok, sender}
   end
 
@@ -13,7 +18,7 @@ defmodule NektoClient.Handler do
   Receives open_dialog message and sets dialog in NektoClient.Sender
   """
   def handle_event({:open_dialog, dialog}, sender) do
-    NektoClient.Sender.set_dialog(sender, dialog)
+    Sender.set_dialog(sender, dialog)
     {:ok, sender}
   end
 

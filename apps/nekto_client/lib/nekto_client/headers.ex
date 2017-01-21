@@ -1,4 +1,8 @@
 defmodule NektoClient.Headers do
+  @moduledoc """
+  Provides functions for parsing headers
+  """
+
   @doc """
   Finds all occurrences of header in headers
 

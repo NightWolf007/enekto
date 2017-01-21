@@ -40,8 +40,8 @@ defmodule NektoClient.Mixfile do
       {:socket, "~> 0.3"},
       {:httpoison, "~> 0.10.0"},
       {:poison, "~> 3.0"},
-      {:excoveralls, "~> 0.6.1", only: :test},
-      {:bypass, "~> 0.5.1", only: :test}
+      {:excoveralls, "~> 0.6", only: :test},
+      {:bypass, "~> 0.5", only: :test}
     ]
   end
 end

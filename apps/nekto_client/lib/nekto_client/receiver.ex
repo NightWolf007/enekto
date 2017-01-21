@@ -1,5 +1,14 @@
 defmodule NektoClient.Receiver do
+  @moduledoc """
+  GenServer for receiving messages from Nekto.me websocket
+  """
+
   use GenServer
+  alias NektoClient.WSClient
+  alias NektoClient.Model.User
+  alias NektoClient.Model.Dialog
+  alias NektoClient.Model.Message
+  alias Socket.Web
 
   ## Client API
 
@@ -72,11 +81,11 @@ defmodule NektoClient.Receiver do
   end
 
   defp listen(socket, ge_pid) do
-    case NektoClient.WSClient.recv!(socket) do
+    case WSClient.recv!(socket) do
       {:json, response} ->
         GenEvent.notify(ge_pid, handle_response(response))
       {:ping, _} ->
-        Socket.Web.send!(socket, {:pong, ""})
+        Web.send!(socket, {:pong, ""})
       _ ->
         :error
     end
@@ -85,19 +94,19 @@ defmodule NektoClient.Receiver do
 
   defp handle_response(%{"notice" => "success_auth", "message" => message}) do
     %{"user" => %{"id" => id}} = message
-    {:success_auth, NektoClient.Model.User.new(id)}
+    {:success_auth, User.new(id)}
   end
 
   defp handle_response(%{"notice" => "open_dialog", "message" => message}) do
     %{"id" => id, "uids" => uids} = message
-    {:open_dialog, NektoClient.Model.Dialog.new(id, uids)}
+    {:open_dialog, Dialog.new(id, uids)}
   end
 
-  defp handle_response(%{"notice" => "chat_new_message", "message" => message}) do
+  defp handle_response(%{"notice" => "chat_new_message",
+                         "message" => message}) do
     %{"message_id" => id, "dialog_id" => dialog_id,
       "user" => %{"id" => uid}, "text" => text} = message
-    msg = NektoClient.Model.Message.new(id, dialog_id, uid, text)
-    {:chat_new_message, msg}
+    {:chat_new_message, Message.new(id, dialog_id, uid, text)}
   end
 
   defp handle_response(%{"notice" => notice, "message" => message}) do

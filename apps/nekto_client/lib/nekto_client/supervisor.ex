@@ -1,5 +1,13 @@
 defmodule NektoClient.Supervisor do
+  @moduledoc """
+  Supervisor for supervising sender and receiver gen servers
+  """
+
   use Supervisor
+  alias NektoClient.WSClient
+  alias NektoClient.Sender
+  alias NektoClient.Receiver
+  alias NektoClient.Handler
 
   @doc """
   Starts supervisor (sender and receiver)
@@ -7,7 +15,7 @@ defmodule NektoClient.Supervisor do
   """
   def start_link(host) do
     {:ok, pid} = Supervisor.start_link(__MODULE__, {:ok, host})
-    NektoClient.Receiver.add_handler(receiver(pid), NektoClient.Handler, sender(pid))
+    Receiver.add_handler(receiver(pid), Handler, sender(pid))
     {:ok, pid}
   end
 
@@ -18,7 +26,7 @@ defmodule NektoClient.Supervisor do
   """
   def start_link(host, args) do
     {:ok, pid} = Supervisor.start_link(__MODULE__, {:ok, host, args})
-    NektoClient.Receiver.add_handler(receiver(pid), NektoClient.Handler, sender(pid))
+    Receiver.add_handler(receiver(pid), Handler, sender(pid))
     {:ok, pid}
   end
 
@@ -27,7 +35,7 @@ defmodule NektoClient.Supervisor do
   """
   def sender(supervisor) do
     supervisor
-    |> which_child(NektoClient.Sender)
+    |> which_child(Sender)
     |> elem(1)
   end
 
@@ -36,7 +44,7 @@ defmodule NektoClient.Supervisor do
   """
   def receiver(supervisor) do
     supervisor
-    |> which_child(NektoClient.Receiver)
+    |> which_child(Receiver)
     |> elem(1)
   end
 
@@ -50,19 +58,19 @@ defmodule NektoClient.Supervisor do
   end
 
   def init({:ok, host}) do
-    socket = NektoClient.WSClient.connect!(host)
+    socket = WSClient.connect!(host)
     init_children(socket)
   end
 
   def init({:ok, host, args}) do
-    socket = NektoClient.WSClient.connect!(host, args)
+    socket = WSClient.connect!(host, args)
     init_children(socket)
   end
 
   defp init_children(socket) do
     children = [
-      worker(NektoClient.Sender, [socket]),
-      worker(NektoClient.Receiver, [socket])
+      worker(Sender, [socket]),
+      worker(Receiver, [socket])
     ]
 
     supervise(children, strategy: :one_for_one)

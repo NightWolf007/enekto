@@ -1,9 +1,16 @@
 defmodule NektoClient.WSClient do
+  @moduledoc """
+  Nekto.me websocket wrapper
+  Provides functions for communication with Nekto.me websocket
+  """
+
+  alias Socket.Web
+
   @doc """
   Establishes connection with host
   """
   def connect!(host) do
-    Socket.Web.connect! host
+    Web.connect! host
   end
 
   @doc """
@@ -11,7 +18,7 @@ defmodule NektoClient.WSClient do
   args - Socket.Web.connect method args
   """
   def connect!(host, args) do
-    Socket.Web.connect! host, args
+    Web.connect! host, args
   end
 
   @doc """
@@ -20,7 +27,7 @@ defmodule NektoClient.WSClient do
   message - is hash
   """
   def send!(socket, action, message \\ %{}) do
-    Socket.Web.send!(socket,
+    Web.send!(socket,
       {
         :text,
         message
@@ -34,7 +41,7 @@ defmodule NektoClient.WSClient do
   Receives single message from the server and parses it
   """
   def recv!(socket) do
-    case Socket.Web.recv!(socket) do
+    case Web.recv!(socket) do
       {:text, data} ->
         {:json, Poison.decode!(data)}
       data ->
@@ -76,7 +83,8 @@ defmodule NektoClient.WSClient do
   """
   def chat_message!(socket, dialog_id, request_id, text) do
     socket
-    |> send!("CHAT_MESSAGE", %{dialog_id: dialog_id, request_id: request_id, text: text})
+    |> send!("CHAT_MESSAGE",
+             %{dialog_id: dialog_id, request_id: request_id, text: text})
   end
 
   @doc """
@@ -84,7 +92,8 @@ defmodule NektoClient.WSClient do
   """
   def chat_message_read!(socket, dialog_id, message_ids) do
     socket
-    |> send!("CHAT_MESSAGE_READ", %{dialog_id: dialog_id, message_ids: message_ids})
+    |> send!("CHAT_MESSAGE_READ",
+             %{dialog_id: dialog_id, message_ids: message_ids})
   end
 
   @doc """

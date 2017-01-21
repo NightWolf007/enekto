@@ -1,4 +1,8 @@
 defmodule NektoClient.Model.User do
+  @moduledoc """
+  User model
+  """
+
   defstruct [:id]
 
   @doc """

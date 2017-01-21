@@ -1,4 +1,8 @@
 defmodule NektoClient.Model.Search do
+  @moduledoc """
+  Search params model
+  """
+
   defstruct my_sex: nil, wish_sex: nil,
             my_age_from: nil, my_age_to: nil, wish_age: []
 

@@ -1,4 +1,8 @@
 defmodule NektoClient.Model.Dialog do
+  @moduledoc """
+  Dialog model
+  """
+
   defstruct id: nil, uids: []
 
   @doc """

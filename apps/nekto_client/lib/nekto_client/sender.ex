@@ -1,5 +1,10 @@
 defmodule NektoClient.Sender do
+  @moduledoc """
+  GenServer for sending messages to Nekto.me websocket
+  """
   use GenServer
+  alias NektoClient.WSClient
+  alias NektoClient.Model.Search
 
   ## Client API
 
@@ -120,58 +125,59 @@ defmodule NektoClient.Sender do
   def handle_call({:count_online_users}, _from, state) do
     state
     |> Map.get(:socket)
-    |> NektoClient.WSClient.count_online_users!()
+    |> WSClient.count_online_users!()
     |> reply_response(state)
   end
 
   def handle_call({:authenticate, user_token}, _from, state) do
     state
     |> Map.get(:socket)
-    |> NektoClient.WSClient.auth!(user_token)
+    |> WSClient.auth!(user_token)
     |> reply_response(state)
   end
 
   def handle_call({:search, search_params}, _from, state) do
     state
     |> Map.get(:socket)
-    |> NektoClient.WSClient.search_company!(
-         NektoClient.Model.Search.format(search_params)
-       )
+    |> WSClient.search_company!(Search.format(search_params))
     |> reply_response(state)
   end
 
   def handle_call({:typing, status}, _from, state) do
     state
     |> Map.get(:socket)
-    |> NektoClient.WSClient.typing_message!(Map.get(state, :dialog).id, status)
+    |> WSClient.typing_message!(Map.get(state, :dialog).id, status)
     |> reply_response(state)
   end
 
   def handle_call({:send, message}, _from, state) do
     state
     |> Map.get(:socket)
-    |> NektoClient.WSClient.chat_message!(Map.get(state, :dialog).id, request_id(state), message)
-    |> reply_response(Map.put(state, :request_counter, Map.get(state, :request_counter) + 1))
+    |> WSClient.chat_message!(Map.get(state, :dialog).id,
+                              request_id(state), message)
+    |> reply_response(Map.put(state, :request_counter,
+                              Map.get(state, :request_counter) + 1))
   end
 
   def handle_call({:read_messages, messages}, _from, state) do
     state
     |> Map.get(:socket)
-    |> NektoClient.WSClient.chat_message_read!(Map.get(state, :dialog).id, Enum.map(messages, &(&1.id)))
+    |> WSClient.chat_message_read!(Map.get(state, :dialog).id,
+                                   Enum.map(messages, &(&1.id)))
     |> reply_response(state)
   end
 
   def handle_call({:leave_dialog}, _from, state) do
     state
     |> Map.get(:socket)
-    |> NektoClient.WSClient.leave_dialog!(Map.get(state, :dialog).id)
+    |> WSClient.leave_dialog!(Map.get(state, :dialog).id)
     |> reply_response(Map.put(state, :dialog, nil))
   end
 
   def handle_call({:leave_search}, _from, state) do
     state
     |> Map.get(:socket)
-    |> NektoClient.WSClient.out_search_company!()
+    |> WSClient.out_search_company!()
     |> reply_response(state)
   end
 

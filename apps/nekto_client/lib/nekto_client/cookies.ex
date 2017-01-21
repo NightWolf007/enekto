@@ -1,4 +1,8 @@
 defmodule NektoClient.Cookies do
+  @moduledoc """
+  Provides functions for parsing cookies
+  """
+
   @doc """
   Parses cookies from Set-Cookie header to list of tuples
 
