@@ -30,5 +30,5 @@ use Mix.Config
 #     import_config "#{Mix.env}.exs"
 
 config :nadia,
-  token: "300884610:AAHSp5kgnxRBP2aPrIC4T7oHI8k00HSS3jM",
+  token: "257836220:AAGyQ0ThrFmMaOT7ZtrQ8QtDHbMICZJMcV8",
   recv_timeout: 10
