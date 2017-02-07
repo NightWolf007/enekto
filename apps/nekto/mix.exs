@@ -1,8 +1,8 @@
-defmodule NektoBot.Mixfile do
+defmodule Nekto.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :nekto_bot,
+    [app: :nekto,
      version: "0.1.0",
      build_path: "../../_build",
      config_path: "../../config/config.exs",
@@ -19,8 +19,7 @@ defmodule NektoBot.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :nadia],
-     mod: {NektoBot, []}]
+    [applications: [:logger]]
   end
 
   # Dependencies can be Hex packages:
@@ -39,9 +38,6 @@ defmodule NektoBot.Mixfile do
   defp deps do
     [
       {:nekto_client, in_umbrella: true},
-      {:nekto, in_umbrella: true},
-      {:excoveralls, "~> 0.6", only: :test},
-      {:nadia, "~> 0.4.2"},
       {:excoveralls, "~> 0.6", only: :test}
     ]
   end

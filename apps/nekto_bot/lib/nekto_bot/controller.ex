@@ -4,6 +4,9 @@ defmodule NektoBot.Controller do
   """
 
   use GenServer
+  alias Nekto.Supervisor
+  alias NektoClient.Receiver
+  alias NektoBot.Forwarder
 
   ## Client API
 
@@ -22,12 +25,6 @@ defmodule NektoBot.Controller do
   end
 
   @doc """
-  """
-  def new_message(controller, message, client) do
-    GenServer.call(controller, {:new_message, message, client})
-  end
-
-  @doc """
   Handles unknown command
   """
   def unknown_command(controller, message) do
@@ -37,7 +34,44 @@ defmodule NektoBot.Controller do
   ## Server Callbacks
 
   def init(:ok) do
-    {:ok, %{}}
+    chats = :ets.new(:chats, [:set, :protected, read_concurrency: true])
+    {:ok, {chats}}
+  end
+
+  def handle_call({:exec, {:connect}, message}, _from, {chats}) do
+    {:ok, supervisor} = Nekto.Supervisor.start_link("chat.nekto.me",
+                                                    path: "/websocket")
+
+    supervisor
+    |> Supervisor.client_a_receiver
+    |> Receiver.add_handler(Forwarder,
+                            %{chat_id: chat_id(message), client: "A"})
+
+    supervisor
+    |> Supervisor.client_b_receiver
+    |> Receiver.add_handler(Forwarder,
+                            %{chat_id: chat_id(message), client: "B"})
+
+    supervisor
+    |> Supervisor.start_listening
+
+    supervisor
+    |> Supervisor.authenticate("nekto.me")
+
+    :ets.insert(chats, {chat_id(message), supervisor})
+    {:reply, :ok, {chats}}
+  end
+
+  def handle_call({:exec, {:reconnect}, message}, from, {chats}) do
+    chat_id = chat_id(message)
+    case :ets.lookup(chats, chat_id) do
+      [{^chat_id, supervisor}] ->
+        Supervisor.stop(supervisor)
+      [] ->
+        :error
+    end
+
+    handle_call({:exec, {:connect}, message}, from, {chats})
   end
 
   def handle_call({:exec, command, message}, _from, state) do
@@ -50,10 +84,6 @@ defmodule NektoBot.Controller do
     |> chat_id
     |> Nadia.send_message("Error! Unknown command")
     {:reply, :ok, state}
-  end
-
-  def handle_call({:new_message, message, client}, _from, state) do
-    Nadia.send_message("#{client} -> #{message}")
   end
 
   defp handle_command({:set, client, params}, message) do

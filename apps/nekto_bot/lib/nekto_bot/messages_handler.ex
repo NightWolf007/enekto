@@ -1,4 +1,4 @@
-defmodule NektoBot.TelegramHandler do
+defmodule NektoBot.MessagesHandler do
   @moduledoc """
   GenEvent Telegram messages handler
   """

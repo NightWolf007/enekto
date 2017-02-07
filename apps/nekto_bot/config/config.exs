@@ -32,3 +32,8 @@ use Mix.Config
 config :nadia,
   token: "257836220:AAGyQ0ThrFmMaOT7ZtrQ8QtDHbMICZJMcV8",
   recv_timeout: 10
+
+config :nekto,
+  host: "nekto.me",
+  ws_host: "chat.nekto.me",
+  ws_path: "/websocket"

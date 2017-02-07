@@ -32,6 +32,8 @@ defmodule NektoBot.Command do
       {:ok, {:send, "A", "Hello!"}}
       iex> NektoBot.Command.parse "/send B Hello!"
       {:ok, {:send, "B", "Hello!"}}
+      iex> NektoBot.Command.parse "/connect"
+      {:ok, {:connect}}
 
   Unknown commands or commands with the wrong number of
   arguments return an error:
@@ -59,6 +61,10 @@ defmodule NektoBot.Command do
         {:ok, {:mute, client}}
       ["/send", client | text] when client in ["A", "B"] and text != [] ->
         {:ok, {:send, client, Enum.join(text, " ")}}
+      ["/connect"] ->
+        {:ok, {:connect}}
+      ["/reconnect"] ->
+        {:ok, {:reconnect}}
       _ ->
         {:error, :unknown_command}
     end
