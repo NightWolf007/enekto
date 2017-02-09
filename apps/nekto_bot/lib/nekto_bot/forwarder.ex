@@ -6,7 +6,7 @@ defmodule NektoBot.Forwarder do
   use GenEvent
 
   @doc """
-  Receives open_dialog message and forwards it to telegram
+  Receives new message and forwards it to telegram
   """
   def handle_event({:chat_new_message, message}, state) do
     state
@@ -15,7 +15,29 @@ defmodule NektoBot.Forwarder do
     {:ok, state}
   end
 
-  def handle_event(_, state) do
+  @doc """
+  Receives search result and forwards it to telegram
+  """
+  def handle_event({:open_dialog, _dialog}, state) do
+    state
+    |> Map.get(:chat_id)
+    |> Nadia.send_message("Client #{Map.get(state, :client)} founded.")
+    {:ok, state}
+  end
+
+  @doc """
+  Receives message about closed dialog
+  """
+  def handle_event({:close_dialog, _dialog}, state) do
+    state
+    |> Map.get(:chat_id)
+    |> Nadia.send_message("Client #{Map.get(state, :client)} closed dialog.")
+    {:ok, state}
+  end
+
+  def handle_event(m, state) do
+    IO.puts inspect(m)
+    IO.puts inspect(state)
     {:ok, state}
   end
 

@@ -51,7 +51,7 @@ defmodule Nekto.Supervisor do
 
   def client_a_receiver(supervisor) do
     supervisor
-    |> client_b
+    |> client_a
     |> NektoClient.Supervisor.receiver
   end
 

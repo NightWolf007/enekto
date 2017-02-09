@@ -67,6 +67,7 @@ defmodule NektoClient.WSClient do
   Sends SEARCH_COMPANY action with serach params to the server
   """
   def search_company!(socket, params) do
+    IO.puts inspect(params)
     socket |> send!("SEARCH_COMPANY", params)
   end
 

@@ -10,10 +10,14 @@ defmodule NektoBot.Command do
 
       iex> NektoBot.Command.parse "/set A sex: M, age_from: 18"
       {:ok, {:set, "A", %{"sex" => "M", "age_from" => "18"}}}
-      iex> NektoBot.Command.parse "/set B sex: W, age_from: 18, age_to: 21"
-      {:ok, {:set, "B", %{"sex" => "W", "age_from" => "18", "age_to" => "21"}}}
-      iex> NektoBot.Command.parse "/set B sex:M  ,age_from: 18,    age_to: 21"
-      {:ok, {:set, "B", %{"sex" => "M", "age_from" => "18", "age_to" => "21"}}}
+      iex> NektoBot.Command.parse("/set B sex: W, age_from: 18, age_to: 21, " <>
+      ...>                        "wish_age: [18t21]")
+      {:ok, {:set, "B", %{"sex" => "W", "age_from" => "18", "age_to" => "21",
+                          "wish_age" => ["18t21"]}}}
+      iex> NektoBot.Command.parse("/set B sex:M  ,age_from: 18,    age_to: 21," <>
+      ...>                        "    , wish_age: [18t21-22t25]")
+      {:ok, {:set, "B", %{"sex" => "M", "age_from" => "18", "age_to" => "21",
+                          "wish_age" => ["18t21", "22t25"]}}}
       iex> NektoBot.Command.parse "/search"
       {:ok, {:search}}
       iex> NektoBot.Command.parse "/search A"
@@ -50,7 +54,10 @@ defmodule NektoBot.Command do
   def parse(message) do
     case String.split(message) do
       ["/set", client | attrs] when client in ["A", "B"] and attrs != [] ->
-        {:ok, {:set, client, attrs |> Enum.join |> parse_attributes}}
+        {:ok, {:set, client, attrs
+                             |> Enum.join
+                             |> parse_attributes
+                             |> parse_wish_age}}
       ["/search"] ->
         {:ok, {:search}}
       ["/search", client] when client in ["A", "B"] ->
@@ -76,5 +83,17 @@ defmodule NektoBot.Command do
     |> Enum.into(%{}, fn(e) -> e
                                |> String.split([" ", ":"], trim: true)
                                |> List.to_tuple end)
+  end
+
+  defp parse_wish_age(%{"wish_age" => wish_age} = hash) when is_bitstring(wish_age) do
+    wish_age = wish_age
+               |> String.trim_leading("[")
+               |> String.trim_trailing("]")
+               |> String.split("-")
+    Map.merge(hash, %{"wish_age" => wish_age})
+  end
+
+  defp parse_wish_age(hash) do
+    hash
   end
 end

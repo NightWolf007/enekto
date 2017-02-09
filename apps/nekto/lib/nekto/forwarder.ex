@@ -7,7 +7,7 @@ defmodule Nekto.Forwarder do
   alias NektoClient.Sender
 
   @doc """
-  Receives open_dialog message and forwards it to sender
+  Receives new message and forwards it to sender
   """
   def handle_event({:chat_new_message, message}, sender) do
     Sender.send(sender, message.text)

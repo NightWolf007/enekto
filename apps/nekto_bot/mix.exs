@@ -40,7 +40,6 @@ defmodule NektoBot.Mixfile do
     [
       {:nekto_client, in_umbrella: true},
       {:nekto, in_umbrella: true},
-      {:excoveralls, "~> 0.6", only: :test},
       {:nadia, "~> 0.4.2"},
       {:excoveralls, "~> 0.6", only: :test}
     ]

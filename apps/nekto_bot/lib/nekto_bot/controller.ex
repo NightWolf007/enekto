@@ -5,7 +5,9 @@ defmodule NektoBot.Controller do
 
   use GenServer
   alias Nekto.Supervisor
+  alias NektoClient.Sender
   alias NektoClient.Receiver
+  alias NektoClient.Model.Search
   alias NektoBot.Forwarder
 
   ## Client API
@@ -34,11 +36,12 @@ defmodule NektoBot.Controller do
   ## Server Callbacks
 
   def init(:ok) do
-    chats = :ets.new(:chats, [:set, :protected, read_concurrency: true])
-    {:ok, {chats}}
+    pids = :ets.new(:pids, [:set, :protected, read_concurrency: true])
+    settings = :ets.new(:settings, [:set, :protected, read_concurrency: true])
+    {:ok, {pids, settings}}
   end
 
-  def handle_call({:exec, {:connect}, message}, _from, {chats}) do
+  def handle_call({:exec, {:connect}, message}, _from, {pids, _} = state) do
     {:ok, supervisor} = Nekto.Supervisor.start_link("chat.nekto.me",
                                                     path: "/websocket")
 
@@ -58,25 +61,74 @@ defmodule NektoBot.Controller do
     supervisor
     |> Supervisor.authenticate("nekto.me")
 
-    :ets.insert(chats, {chat_id(message), supervisor})
-    {:reply, :ok, {chats}}
+    chat_id = chat_id(message)
+    :ets.insert(pids, {chat_id, supervisor})
+
+    Nadia.send_message(chat_id, "Successfully connected!")
+
+    {:reply, :ok, state}
   end
 
-  def handle_call({:exec, {:reconnect}, message}, from, {chats}) do
+  def handle_call({:exec, {:reconnect}, message}, from, {pids, settings}) do
     chat_id = chat_id(message)
-    case :ets.lookup(chats, chat_id) do
+    case :ets.lookup(pids, chat_id) do
       [{^chat_id, supervisor}] ->
         Supervisor.stop(supervisor)
+        Nadia.send_message(chat_id, "Connection closed.")
       [] ->
         :error
     end
 
-    handle_call({:exec, {:connect}, message}, from, {chats})
+    handle_call({:exec, {:connect}, message}, from, {pids, settings})
   end
 
-  def handle_call({:exec, command, message}, _from, state) do
-    handle_command(command, message)
-    {:reply, :ok, state}
+  def handle_call({:exec, {:set, client, params}, message}, _from, {pids, settings}) do
+    chat_id = chat_id(message)
+    value = case :ets.lookup(settings, chat_id) do
+      [{^chat_id, clients_params}] ->
+        Map.merge(clients_params, %{client => params})
+      [] ->
+        %{client => params}
+    end
+    :ets.insert(settings, {chat_id, value})
+    Nadia.send_message(
+      chat_id,
+      "Client #{client} setted as #{inspect(params)}."
+    )
+    {:reply, :ok, {pids, settings}}
+  end
+
+  def handle_call({:exec, {:search}, message}, _from, {pids, settings} = state) do
+    chat_id = chat_id(message)
+    case :ets.lookup(pids, chat_id) do
+      [{^chat_id, supervisor}] ->
+        case :ets.lookup(settings, chat_id) do
+          [{^chat_id, clients_params}] ->
+            supervisor
+            |> Supervisor.client_a_sender
+            |> Sender.search(Search.from_hash(Map.get(clients_params, "A")))
+
+            supervisor
+            |> Supervisor.client_b_sender
+            |> Sender.search(Search.from_hash(Map.get(clients_params, "B")))
+
+            Nadia.send_message(chat_id, "Searching clients...")
+            {:reply, :ok, state}
+          [] ->
+            Nadia.send_message(
+              chat_id,
+              "Error! Clients haven't setted. " <>
+              "Please, set both clients and try again."
+            )
+            {:reply, :error, state}
+        end
+      [] ->
+        Nadia.send_message(
+          chat_id,
+          "Error! Clients haven't connected. Please, connect and try again."
+        )
+        {:reply, :error, state}
+    end
   end
 
   def handle_call({:unknown_command, message}, _from, state) do
@@ -84,20 +136,6 @@ defmodule NektoBot.Controller do
     |> chat_id
     |> Nadia.send_message("Error! Unknown command")
     {:reply, :ok, state}
-  end
-
-  defp handle_command({:set, client, params}, message) do
-    message
-    |> chat_id
-    |> Nadia.send_message(
-         "Params for client #{client} setted as #{inspect params}"
-       )
-  end
-
-  defp handle_command({:search, client}, message) do
-    message
-    |> chat_id
-    |> Nadia.send_message("Searching for client #{client}...")
   end
 
   defp handle_command({:search}, message) do
