@@ -47,13 +47,19 @@ defmodule NektoBot.Controller do
 
     supervisor
     |> Supervisor.client_a_receiver
-    |> Receiver.add_handler(Forwarder,
-                            %{chat_id: chat_id(message), client: "A"})
+    |> Receiver.add_handler(
+         Forwarder,
+         %{chat_id: chat_id(message), client: :a,
+           forwarding_controller: Supervisor.forwarding_controller(supervisor)}
+       )
 
     supervisor
     |> Supervisor.client_b_receiver
-    |> Receiver.add_handler(Forwarder,
-                            %{chat_id: chat_id(message), client: "B"})
+    |> Receiver.add_handler(
+         Forwarder,
+         %{chat_id: chat_id(message), client: :b,
+           forwarding_controller: Supervisor.forwarding_controller(supervisor)}
+       )
 
     supervisor
     |> Supervisor.start_listening

@@ -4,34 +4,42 @@ defmodule NektoBot.Forwarder do
   """
 
   use GenEvent
+  alias Nekto.ForwardingController
 
   @doc """
   Receives new message and forwards it to telegram
   """
-  def handle_event({:chat_new_message, message}, state) do
-    state
-    |> Map.get(:chat_id)
-    |> Nadia.send_message(format_message(Map.get(state, :client), message.text))
+  def handle_event({:chat_new_message, message},
+                   %{chat_id: chat_id, client: client} = state) do
+    Nadia.send_message(chat_id, format_message(client, message.text))
     {:ok, state}
   end
 
   @doc """
   Receives search result and forwards it to telegram
   """
-  def handle_event({:open_dialog, _dialog}, state) do
-    state
-    |> Map.get(:chat_id)
-    |> Nadia.send_message("Client #{Map.get(state, :client)} founded.")
+  def handle_event({:open_dialog, _dialog},
+                   %{chat_id: chat_id, client: client,
+                     forwarding_controller: controller} = state) do
+    ForwardingController.connect(controller, client)
+    Nadia.send_message(
+      chat_id,
+      "Client #{format_client(client)} found."
+    )
     {:ok, state}
   end
 
   @doc """
   Receives message about closed dialog
   """
-  def handle_event({:close_dialog, _dialog}, state) do
-    state
-    |> Map.get(:chat_id)
-    |> Nadia.send_message("Client #{Map.get(state, :client)} closed dialog.")
+  def handle_event({:close_dialog, _dialog},
+                   %{chat_id: chat_id, client: client,
+                     forwarding_controller: controller} = state) do
+    ForwardingController.disconnect(controller, client)
+    Nadia.send_message(
+      chat_id,
+      "Client #{format_client(client)} closed dialog."
+    )
     {:ok, state}
   end
 
@@ -41,7 +49,13 @@ defmodule NektoBot.Forwarder do
     {:ok, state}
   end
 
+  defp format_client(client) do
+    client
+    |> Atom.to_string
+    |> String.upcase
+  end
+
   defp format_message(client, message) do
-    "#{client} -> #{message}"
+    "#{format_client(client)} -> #{message}"
   end
 end

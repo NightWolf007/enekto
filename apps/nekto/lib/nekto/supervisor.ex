@@ -8,6 +8,7 @@ defmodule Nekto.Supervisor do
   alias NektoClient.Receiver
   alias NektoClient.HTTPClient
   alias Nekto.Forwarder
+  alias Nekto.ForwardingController
 
   @doc """
   Starts supervisor (client A and B) and registers forwarder handler
@@ -77,6 +78,15 @@ defmodule Nekto.Supervisor do
   end
 
   @doc """
+  Returns forwarding controller pid
+  """
+  def forwarding_controller(supervisor) do
+    supervisor
+    |> which_child(ForwardingController)
+    |> elem(1)
+  end
+
+  @doc """
   Returns child by module name
   """
   def which_child(supervisor, worker) do
@@ -116,7 +126,8 @@ defmodule Nekto.Supervisor do
       supervisor(NektoClient.Supervisor, [host],
                  id: "NektoClient.Supervisor.A"),
       supervisor(NektoClient.Supervisor, [host],
-                 id: "NektoClient.Supervisor.B")
+                 id: "NektoClient.Supervisor.B"),
+      worker(ForwardingController, [])
     ]
 
     supervise(children, strategy: :one_for_one)
@@ -127,7 +138,8 @@ defmodule Nekto.Supervisor do
       supervisor(NektoClient.Supervisor, [host, args],
                  id: "NektoClient.Supervisor.A"),
       supervisor(NektoClient.Supervisor, [host, args],
-                 id: "NektoClient.Supervisor.B")
+                 id: "NektoClient.Supervisor.B"),
+      worker(ForwardingController, [])
     ]
 
     supervise(children, strategy: :one_for_one)
@@ -136,10 +148,18 @@ defmodule Nekto.Supervisor do
   defp register_forwarder(supervisor) do
     supervisor
     |> client_a_receiver
-    |> Receiver.add_handler(Forwarder, client_b_sender(supervisor))
+    |> Receiver.add_handler(
+         Forwarder,
+         %{client: :a, forwarding_controller: forwarding_controller(supervisor),
+           sender: client_b_sender(supervisor), buffer: []}
+      )
 
     supervisor
     |> client_b_receiver
-    |> Receiver.add_handler(Forwarder, client_a_sender(supervisor))
+    |> Receiver.add_handler(
+         Forwarder,
+         %{client: :b, forwarding_controller: forwarding_controller(supervisor),
+           sender: client_a_sender(supervisor), buffer: []}
+       )
   end
 end
