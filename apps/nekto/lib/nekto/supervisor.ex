@@ -87,6 +87,24 @@ defmodule Nekto.Supervisor do
   end
 
   @doc """
+  Returns client a buffer pid
+  """
+  def buffer_a(supervisor) do
+    supervisor
+    |> which_child("Buffer.A")
+    |> elem(1)
+  end
+
+  @doc """
+  Returns client b buffer pid
+  """
+  def buffer_b(supervisor) do
+    supervisor
+    |> which_child("Buffer.B")
+    |> elem(1)
+  end
+
+  @doc """
   Returns child by module name
   """
   def which_child(supervisor, worker) do
@@ -127,7 +145,9 @@ defmodule Nekto.Supervisor do
                  id: "NektoClient.Supervisor.A"),
       supervisor(NektoClient.Supervisor, [host],
                  id: "NektoClient.Supervisor.B"),
-      worker(ForwardingController, [])
+      worker(ForwardingController, []),
+      worker(Agent, [fn -> [] end], id: "Buffer.A"),
+      worker(Agent, [fn -> [] end], id: "Buffer.B")
     ]
 
     supervise(children, strategy: :one_for_one)
@@ -139,7 +159,9 @@ defmodule Nekto.Supervisor do
                  id: "NektoClient.Supervisor.A"),
       supervisor(NektoClient.Supervisor, [host, args],
                  id: "NektoClient.Supervisor.B"),
-      worker(ForwardingController, [])
+      worker(ForwardingController, []),
+      worker(Agent, [fn -> [] end], id: "Buffer.A"),
+      worker(Agent, [fn -> [] end], id: "Buffer.B")
     ]
 
     supervise(children, strategy: :one_for_one)
@@ -151,7 +173,7 @@ defmodule Nekto.Supervisor do
     |> Receiver.add_handler(
          Forwarder,
          %{client: :a, forwarding_controller: forwarding_controller(supervisor),
-           sender: client_b_sender(supervisor), buffer: []}
+           sender: client_b_sender(supervisor), buffer: buffer_a(supervisor)}
       )
 
     supervisor
@@ -159,7 +181,7 @@ defmodule Nekto.Supervisor do
     |> Receiver.add_handler(
          Forwarder,
          %{client: :b, forwarding_controller: forwarding_controller(supervisor),
-           sender: client_a_sender(supervisor), buffer: []}
+           sender: client_a_sender(supervisor), buffer: buffer_b(supervisor)}
        )
   end
 end

@@ -4,7 +4,6 @@ defmodule NektoBot.Forwarder do
   """
 
   use GenEvent
-  alias Nekto.ForwardingController
 
   @doc """
   Receives new message and forwards it to telegram
@@ -19,9 +18,7 @@ defmodule NektoBot.Forwarder do
   Receives search result and forwards it to telegram
   """
   def handle_event({:open_dialog, _dialog},
-                   %{chat_id: chat_id, client: client,
-                     forwarding_controller: controller} = state) do
-    ForwardingController.connect(controller, client)
+                   %{chat_id: chat_id, client: client} = state) do
     Nadia.send_message(
       chat_id,
       "Client #{format_client(client)} found."
@@ -33,9 +30,7 @@ defmodule NektoBot.Forwarder do
   Receives message about closed dialog
   """
   def handle_event({:close_dialog, _dialog},
-                   %{chat_id: chat_id, client: client,
-                     forwarding_controller: controller} = state) do
-    ForwardingController.disconnect(controller, client)
+                   %{chat_id: chat_id, client: client} = state) do
     Nadia.send_message(
       chat_id,
       "Client #{format_client(client)} closed dialog."
@@ -45,7 +40,6 @@ defmodule NektoBot.Forwarder do
 
   def handle_event(m, state) do
     IO.puts inspect(m)
-    IO.puts inspect(state)
     {:ok, state}
   end
 

@@ -22,6 +22,20 @@ defmodule Nekto.ForwardingController do
   end
 
   @doc """
+  Is client muted?
+  """
+  def muted?(controller, client) when client in [:a, :b] do
+    GenServer.call(controller, {:muted, client})
+  end
+
+  @doc """
+  Is client connected?
+  """
+  def connected?(controller, client) when client in [:a, :b] do
+    GenServer.call(controller, {:connected, client})
+  end
+
+  @doc """
   Mark client as muted
   """
   def mute(controller, client) when client in [:a, :b] do
@@ -60,11 +74,19 @@ defmodule Nekto.ForwardingController do
   end
 
   def handle_call({:forward_from, :a}, _from, state) do
-    {:reply, !muted?(state, :a) && connected?(state, :b), state}
+    {:reply, !is_muted?(state, :a) && is_connected?(state, :b), state}
   end
 
   def handle_call({:forward_from, :b}, _from, state) do
-    {:reply, !muted?(state, :b) && connected?(state, :a), state}
+    {:reply, !is_muted?(state, :b) && is_connected?(state, :a), state}
+  end
+
+  def handle_call({:muted, client}, _from, state) do
+    {:reply, is_muted?(state, client), state}
+  end
+
+  def handle_call({:connected, client}, _from, state) do
+    {:reply, is_connected?(state, client), state}
   end
 
   def handle_call({:mute, client}, _from, state) do
@@ -89,13 +111,13 @@ defmodule Nekto.ForwardingController do
     |> Map.put(client, Map.merge(client_value, %{key => value}))
   end
 
-  defp muted?(state, client) do
+  defp is_muted?(state, client) do
     state
     |> Map.get(client)
     |> Map.get(:muted)
   end
 
-  defp connected?(state, client) do
+  defp is_connected?(state, client) do
     state
     |> Map.get(client)
     |> Map.get(:connected)

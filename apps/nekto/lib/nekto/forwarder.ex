@@ -16,10 +16,36 @@ defmodule Nekto.Forwarder do
     case ForwardingController.forward_from?(controller, client) do
       true ->
         Sender.send(sender, message.text)
-        {:ok, state}
       false ->
-        {:ok, Map.merge(state, %{buffer: [buffer | message.text]})}
+        if !ForwardingController.muted?(controller, client) do
+          Agent.update(buffer, fn(list) -> [list | message.text] end)
+        end
     end
+    {:ok, state}
+  end
+
+  @doc """
+  Receives search result and forwards it to telegram
+  """
+  def handle_event({:open_dialog, _dialog},
+                   %{client: client, forwarding_controller: controller,
+                     sender: sender, buffer: buffer} = state) do
+    ForwardingController.connect(controller, client)
+    buffer
+    |> Agent.get(fn(list) -> list end)
+    |> Enum.each(fn(m) -> Sender.send(sender, m) end)
+    Agent.update(buffer, fn(_) -> [] end)
+    {:ok, state}
+  end
+
+  @doc """
+  Receives message about closed dialog
+  """
+  def handle_event({:close_dialog, _dialog},
+                   %{client: client,
+                     forwarding_controller: controller} = state) do
+    ForwardingController.disconnect(controller, client)
+    {:ok, state}
   end
 
   def handle_event(_, state) do

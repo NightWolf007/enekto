@@ -66,6 +66,8 @@ defmodule NektoBot.Command do
         {:ok, {:kick, client}}
       ["/mute", client] when client in ["A", "B"] ->
         {:ok, {:mute, client}}
+      ["/unmute", client] when client in ["A", "B"] ->
+        {:ok, {:mute, client}}
       ["/send", client | text] when client in ["A", "B"] and text != [] ->
         {:ok, {:send, client, Enum.join(text, " ")}}
       ["/connect"] ->
