@@ -25,7 +25,7 @@ defmodule Nekto.Forwarder do
   end
 
   @doc """
-  Receives search result and forwards it to telegram
+  Receives search result
   """
   def handle_event({:open_dialog, _dialog},
                    %{client: client, forwarding_controller: controller,
@@ -39,9 +39,19 @@ defmodule Nekto.Forwarder do
   end
 
   @doc """
-  Receives message about closed dialog
+  Receives closed_dialog message
   """
   def handle_event({:close_dialog, _dialog},
+                   %{client: client,
+                     forwarding_controller: controller} = state) do
+    ForwardingController.disconnect(controller, client)
+    {:ok, state}
+  end
+
+  @doc """
+  Receives success_leave message
+  """
+  def handle_event({:success_leave, _dialog},
                    %{client: client,
                      forwarding_controller: controller} = state) do
     ForwardingController.disconnect(controller, client)

@@ -223,27 +223,37 @@ defmodule NektoBot.Controller do
     end
   end
 
+  def handle_call({:exec, {:kick, client}, message}, _from, {pids, _} = state) do
+    chat_id = chat_id(message)
+    case :ets.lookup(pids, chat_id) do
+      [{^chat_id, supervisor}] ->
+        if(client == "A") do
+          supervisor
+          |> Supervisor.client_a_sender
+          |> Sender.leave_dialog
+        else
+          supervisor
+          |> Supervisor.client_b_sender
+          |> Sender.leave_dialog
+        end
+
+        Nadia.send_message(chat_id, "Client #{client} kicked.")
+        {:reply, :ok, state}
+      [] ->
+        Nadia.send_message(
+          chat_id,
+          "Error! Client #{client} haven't connected. " <>
+          "Please, connect and try again."
+        )
+        {:reply, :error, state}
+    end
+  end
+
   def handle_call({:unknown_command, message}, _from, state) do
     message
     |> chat_id
     |> Nadia.send_message("Error! Unknown command")
     {:reply, :ok, state}
-  end
-
-  defp handle_command({:kick, client}, message) do
-    message
-    |> chat_id
-    |> Nadia.send_message("Client #{client} kicked")
-  end
-
-  defp handle_command({:mute, client}, message) do
-
-  end
-
-  defp handle_command({:send, client, text}, message) do
-    message
-    |> chat_id
-    |> Nadia.send_message("YOU => #{client} -> #{text}")
   end
 
   defp chat_id(message) do
