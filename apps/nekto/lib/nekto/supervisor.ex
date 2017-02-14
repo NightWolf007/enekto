@@ -4,18 +4,16 @@ defmodule Nekto.Supervisor do
   """
 
   use Supervisor
-  alias NektoClient.Sender
   alias NektoClient.Receiver
-  alias NektoClient.HTTPClient
   alias Nekto.Forwarder
-  alias Nekto.ForwardingController
+  alias Nekto.MessagesHandler
 
   @doc """
   Starts supervisor (client A and B) and registers forwarder handler
   """
   def start_link(host) do
-    {:ok, pid} = Supervisor.start_link(__MODULE__, {:ok, host})
-    register_forwarder(pid)
+    {:ok, pid} = Supervisor.start_link(__MODULE__, {:ok, [host]})
+    prepare_clients(pid)
     {:ok, pid}
   end
 
@@ -23,8 +21,8 @@ defmodule Nekto.Supervisor do
   Starts supervisor (clients A and B) and registers forwarder handler
   """
   def start_link(host, args) do
-    {:ok, pid} = Supervisor.start_link(__MODULE__, {:ok, host, args})
-    register_forwarder(pid)
+    {:ok, pid} = Supervisor.start_link(__MODULE__, {:ok, [host, args]})
+    prepare_clients(pid)
     {:ok, pid}
   end
 
@@ -36,71 +34,38 @@ defmodule Nekto.Supervisor do
   end
 
   @doc """
-  Returns pid of Nekto Client A
+  Returns pid of Nekto Client
   """
-  def client_a(supervisor) do
+  def client(supervisor, client) when is_atom(client) do
     supervisor
-    |> which_child("NektoClient.Supervisor.A")
+    |> which_child("NektoClient.Supervisor.#{client}")
     |> elem(1)
-  end
-
-  def client_a_sender(supervisor) do
-    supervisor
-    |> client_a
-    |> NektoClient.Supervisor.sender
-  end
-
-  def client_a_receiver(supervisor) do
-    supervisor
-    |> client_a
-    |> NektoClient.Supervisor.receiver
   end
 
   @doc """
-  Returns pid of Nekto Client B
+  Returns pid of Nekto Client Sender
   """
-  def client_b(supervisor) do
+  def sender(supervisor, client) when is_atom(client) do
     supervisor
-    |> which_child("NektoClient.Supervisor.B")
-    |> elem(1)
-  end
-
-  def client_b_sender(supervisor) do
-    supervisor
-    |> client_b
+    |> client(client)
     |> NektoClient.Supervisor.sender
   end
 
-  def client_b_receiver(supervisor) do
+  @doc """
+  Returns pid of Nekto Client Receiver
+  """
+  def receiver(supervisor, client) when is_atom(client) do
     supervisor
-    |> client_b
+    |> client(client)
     |> NektoClient.Supervisor.receiver
   end
 
   @doc """
   Returns forwarding controller pid
   """
-  def forwarding_controller(supervisor) do
+  def forwarder(supervisor) do
     supervisor
-    |> which_child(ForwardingController)
-    |> elem(1)
-  end
-
-  @doc """
-  Returns client a buffer pid
-  """
-  def buffer_a(supervisor) do
-    supervisor
-    |> which_child("Buffer.A")
-    |> elem(1)
-  end
-
-  @doc """
-  Returns client b buffer pid
-  """
-  def buffer_b(supervisor) do
-    supervisor
-    |> which_child("Buffer.B")
+    |> which_child(Forwarder)
     |> elem(1)
   end
 
@@ -113,75 +78,32 @@ defmodule Nekto.Supervisor do
     |> List.keyfind(worker, 0)
   end
 
-  @doc """
-  Starts listenning sockets on both receivers
-  """
-  def start_listening(supervisor) do
-    supervisor
-    |> client_a_receiver
-    |> Receiver.start_listening
-
-    supervisor
-    |> client_b_receiver
-    |> Receiver.start_listening
-  end
-
-  @doc """
-  Auto authenticate two clients
-  """
-  def authenticate(supervisor, host) do
-    supervisor
-    |> client_a_sender
-    |> Sender.authenticate(HTTPClient.chat_token!(host))
-
-    supervisor
-    |> client_b_sender
-    |> Sender.authenticate(HTTPClient.chat_token!(host))
-  end
-
-  def init({:ok, host}) do
+  def init({:ok, params}) do
     children = [
-      supervisor(NektoClient.Supervisor, [host],
-                 id: "NektoClient.Supervisor.A"),
-      supervisor(NektoClient.Supervisor, [host],
-                 id: "NektoClient.Supervisor.B"),
-      worker(ForwardingController, []),
-      worker(Agent, [fn -> [] end], id: "Buffer.A"),
-      worker(Agent, [fn -> [] end], id: "Buffer.B")
+      supervisor(NektoClient.Supervisor, params,
+                 id: "NektoClient.Supervisor.a"),
+      supervisor(NektoClient.Supervisor, params,
+                 id: "NektoClient.Supervisor.b"),
+      worker(Forwarder, [])
     ]
 
     supervise(children, strategy: :one_for_one)
   end
 
-  def init({:ok, host, args}) do
-    children = [
-      supervisor(NektoClient.Supervisor, [host, args],
-                 id: "NektoClient.Supervisor.A"),
-      supervisor(NektoClient.Supervisor, [host, args],
-                 id: "NektoClient.Supervisor.B"),
-      worker(ForwardingController, []),
-      worker(Agent, [fn -> [] end], id: "Buffer.A"),
-      worker(Agent, [fn -> [] end], id: "Buffer.B")
-    ]
 
-    supervise(children, strategy: :one_for_one)
+  defp prepare_clients(supervisor) do
+    forwarder = forwarder(supervisor)
+    [:a, :b]
+    |> Enum.map(fn(c) -> {c, client(supervisor, c)} end)
+    |> Enum.each(fn(client_data) -> prepare_client(forwarder, client_data) end)
   end
 
-  defp register_forwarder(supervisor) do
-    supervisor
-    |> client_a_receiver
-    |> Receiver.add_handler(
-         Forwarder,
-         %{client: :a, forwarding_controller: forwarding_controller(supervisor),
-           sender: client_b_sender(supervisor), buffer: buffer_a(supervisor)}
-      )
-
-    supervisor
-    |> client_b_receiver
-    |> Receiver.add_handler(
-         Forwarder,
-         %{client: :b, forwarding_controller: forwarding_controller(supervisor),
-           sender: client_a_sender(supervisor), buffer: buffer_b(supervisor)}
-       )
+  defp prepare_client(forwarder, {client_name, client}) do
+    Forwarder.attach_client(forwarder, client_name,
+                            NektoClient.Supervisor.sender(client))
+    Receiver.add_handler(
+      NektoClient.Supervisor.receiver(client),
+      MessagesHandler, %{client: client_name, forwarder: forwarder}
+    )
   end
 end

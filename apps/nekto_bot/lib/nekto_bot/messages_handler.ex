@@ -8,10 +8,9 @@ defmodule NektoBot.MessagesHandler do
   alias NektoBot.Controller
 
   @doc """
-  Receives success_auth message and sets user in NektoClient.Sender
+  Receives messages from telegram, parse them and sends to controller
   """
-  def handle_event({:message, message}, state) do
-    controller = state |> Map.get(:controller)
+  def handle_event({:message, message}, %{controller: controller} = state) do
     case parse_message(message) do
       {:ok, command} ->
         controller |> Controller.exec(command, message)
@@ -24,6 +23,7 @@ defmodule NektoBot.MessagesHandler do
   def handle_event(_, state) do
     {:ok, state}
   end
+
 
   defp parse_message(message) do
     message

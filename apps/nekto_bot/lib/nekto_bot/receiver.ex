@@ -84,7 +84,6 @@ defmodule NektoBot.Receiver do
         handle_updates(ge_pid, updates)
         updates |> List.last |> Map.get(:update_id) |> Kernel.+(1)
       {:error, _} ->
-        IO.puts "Error! Error happend while getting Telegram updates"
         offset
     end
     listen(ge_pid, offset)

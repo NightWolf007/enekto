@@ -19,7 +19,7 @@ defmodule Nekto.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger]]
+    [applications: [:logger, :nekto_client]]
   end
 
   # Dependencies can be Hex packages:
@@ -38,7 +38,8 @@ defmodule Nekto.Mixfile do
   defp deps do
     [
       {:nekto_client, in_umbrella: true},
-      {:excoveralls, "~> 0.6", only: :test}
+      {:excoveralls, "~> 0.6", only: :test},
+      {:mock, "~> 0.2", only: :test}
     ]
   end
 end

@@ -30,7 +30,7 @@ use Mix.Config
 #     import_config "#{Mix.env}.exs"
 
 config :nadia,
-  token: "257836220:AAGyQ0ThrFmMaOT7ZtrQ8QtDHbMICZJMcV8",
+  token: {:system, "NEKTO_BOT_TOKEN", "telegram_api_token"},
   recv_timeout: 10
 
 config :nekto,

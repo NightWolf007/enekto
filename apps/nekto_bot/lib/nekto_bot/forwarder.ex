@@ -38,8 +38,7 @@ defmodule NektoBot.Forwarder do
     {:ok, state}
   end
 
-  def handle_event(m, state) do
-    IO.puts inspect(m)
+  def handle_event(_, state) do
     {:ok, state}
   end
 

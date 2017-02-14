@@ -6,13 +6,14 @@ defmodule NektoClient.SupervisorTest do
   alias NektoClient.Supervisor
   alias NektoClient.Receiver
 
-  setup do{:ok, mock_server} = WSServerMock.start_link
-  WSServerMock.start(mock_server, 9000)
+  setup do
+    {:ok, mock_server} = WSServerMock.start_link
+    WSServerMock.start(mock_server, 9000)
 
-  {:ok, supervisor} =
-    Supervisor.start_link({"localhost", 9000}, path: "/")
+    {:ok, supervisor} =
+      Supervisor.start_link({"localhost", 9000}, path: "/")
 
-  {:ok, supervisor: supervisor}
+    {:ok, supervisor: supervisor}
   end
 
   test "it starts link with args", %{supervisor: supervisor} do

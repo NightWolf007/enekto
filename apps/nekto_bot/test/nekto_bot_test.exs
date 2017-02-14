@@ -1,6 +1,3 @@
 defmodule NektoBotTest do
-  use ExUnit.Case
-  doctest NektoBot
-
-
+  use ExUnit.Case, async: true
 end
