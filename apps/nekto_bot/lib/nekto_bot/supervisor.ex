@@ -15,7 +15,8 @@ defmodule NektoBot.Supervisor do
     {:ok, pid} = Supervisor.start_link(__MODULE__, :ok)
     pid
     |> receiver
-    |> Receiver.add_handler(MessagesHandler, %{controller: controller(pid)})
+    |> Receiver.add_handler(MessagesHandler,
+                            %{controller: controller(pid), chats: %{}})
     {:ok, pid}
   end
 

@@ -23,10 +23,41 @@ defmodule NektoBot.Controller do
   end
 
   @doc """
+  Handles setup action
+  """
+  def setup(controller, input, client, fsm_state, message) do
+    case fsm_state do
+      :command_input ->
+        GenServer.call(controller, {:setup, client, chat_id(message)})
+      :my_sex_input ->
+        GenServer.call(controller, {:setup, {"my_sex", input, client},
+                                    chat_id(message)})
+      :wish_sex_input ->
+        GenServer.call(controller, {:setup, {"wish_sex", input, client},
+                                             chat_id(message)})
+      :my_age_input ->
+        GenServer.call(controller, {:setup, {"my_age_from", elem(input, 0),
+                                             client}, chat_id(message)})
+        GenServer.call(controller, {:setup, {"my_age_to", elem(input, 1),
+                                             client}, chat_id(message)})
+      :wish_age_input ->
+        GenServer.call(controller, {:setup, {"wish_age", input, client},
+                                    chat_id(message)})
+    end
+  end
+
+  @doc """
   Handles unknown command
   """
   def unknown_command(controller, message) do
     GenServer.call(controller, {:unknown_command, chat_id(message), message})
+  end
+
+  @doc """
+  Returns settings for client
+  """
+  def settings(controller, chat_id, client) do
+    GenServer.call(controller, {:settings, chat_id, client})
   end
 
   ## Server Callbacks
@@ -63,21 +94,6 @@ defmodule NektoBot.Controller do
         :not_found
     end
     handle_call({:exec, {:connect}, chat_id, message}, from, state)
-    {:reply, :ok, state}
-  end
-
-  def handle_call({:exec, {:set, client, params}, chat_id, _}, _from,
-                  {_, settings} = state) do
-    case :ets.lookup(settings, chat_id) do
-      [{^chat_id, chat_settings}] ->
-        :ets.insert(settings, {chat_id, Map.put(chat_settings, client, params)})
-      [] ->
-        :ets.insert(settings, {chat_id, %{client => params}})
-    end
-    Nadia.send_message(
-      chat_id,
-      "Client #{client_name(client)} setted as #{inspect(params)}."
-    )
     {:reply, :ok, state}
   end
 
@@ -165,9 +181,47 @@ defmodule NektoBot.Controller do
     end
   end
 
+
+  def handle_call({:setup, {param, input, client}, chat_id}, _from,
+                  {_, settings} = state) do
+    case :ets.lookup(settings, chat_id) do
+      [{^chat_id, chat_settings}] ->
+        client_settings = chat_settings
+                          |> Map.get(client)
+                          |> Map.put(param, input)
+        :ets.insert(settings,
+                    {chat_id, Map.put(chat_settings, client, client_settings)})
+        {:reply, client_settings, state}
+      [] ->
+        {:reply, :error, state}
+    end
+  end
+
+  def handle_call({:setup, client, chat_id}, _from, {_, settings} = state) do
+    case :ets.lookup(settings, chat_id) do
+      [{^chat_id, chat_settings}] ->
+        {:reply, Map.get(chat_settings, client), state}
+      [] ->
+        chat_settings = %{a: %{}, b: %{}}
+        :ets.insert(settings, {chat_id, chat_settings})
+        {:reply, Map.get(chat_settings, client), state}
+    end
+  end
+
+
   def handle_call({:unknown_command, chat_id, _}, _from, state) do
     Nadia.send_message(chat_id, "Error! Unknown command")
     {:reply, :ok, state}
+  end
+
+
+  def handle_call({:settings, chat_id, client}, _from, {_, settings} = state) do
+    case :ets.lookup(settings, chat_id) do
+      [{^chat_id, chat_settings}] ->
+        {:reply, Map.get(chat_settings, client), state}
+      [] ->
+        {:reply, %{}, state}
+    end
   end
 
 

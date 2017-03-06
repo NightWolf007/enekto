@@ -8,16 +8,10 @@ defmodule NektoBot.Command do
 
   ## Examples
 
-      iex> NektoBot.Command.parse "/set A sex: M, age_from: 18"
-      {:ok, {:set, :a, %{"sex" => "M", "age_from" => "18"}}}
-      iex> NektoBot.Command.parse("/set B sex: W, age_from: 18, age_to: 21, " <>
-      ...>                        "wish_age: [18t21]")
-      {:ok, {:set, :b, %{"sex" => "W", "age_from" => "18", "age_to" => "21",
-                         "wish_age" => ["18t21"]}}}
-      iex> NektoBot.Command.parse("/set B sex:M  ,age_from: 18,    age_to: 21," <>
-      ...>                        "    , wish_age: [18t21-22t25]")
-      {:ok, {:set, :b, %{"sex" => "M", "age_from" => "18", "age_to" => "21",
-                         "wish_age" => ["18t21", "22t25"]}}}
+      iex> NektoBot.Command.parse "/set A"
+      {:ok, {:set, :a}}
+      iex> NektoBot.Command.parse("/set B")
+      {:ok, {:set, :b}}
       iex> NektoBot.Command.parse "/search"
       {:ok, {:search}}
       iex> NektoBot.Command.parse "/search A"
@@ -46,8 +40,6 @@ defmodule NektoBot.Command do
 
       iex> NektoBot.Command.parse "/unknown A B"
       {:error, :unknown_command}
-      iex> NektoBot.Command.parse "/set A"
-      {:error, :unknown_command}
       iex> NektoBot.Command.parse "/kick"
       {:error, :unknown_command}
       iex> NektoBot.Command.parse "/send B"
@@ -55,11 +47,8 @@ defmodule NektoBot.Command do
   """
   def parse(message) do
     case String.split(message) do
-      ["/set", client | attrs] when client in ["A", "B"] and attrs != [] ->
-        {:ok, {:set, parse_client(client), attrs
-                                           |> Enum.join
-                                           |> parse_attributes
-                                           |> parse_wish_age}}
+      ["/set", client] when client in ["A", "B"] ->
+        {:ok, {:set, parse_client(client)}}
       ["/search"] ->
         {:ok, {:search}}
       ["/search", client] when client in ["A", "B"] ->
@@ -79,26 +68,6 @@ defmodule NektoBot.Command do
       _ ->
         {:error, :unknown_command}
     end
-  end
-
-  defp parse_attributes(attrs) do
-    attrs
-    |> String.split(",", trim: true)
-    |> Enum.into(%{}, fn(e) -> e
-                               |> String.split([" ", ":"], trim: true)
-                               |> List.to_tuple end)
-  end
-
-  defp parse_wish_age(%{"wish_age" => wish_age} = hash) when is_bitstring(wish_age) do
-    wish_age = wish_age
-               |> String.trim_leading("[")
-               |> String.trim_trailing("]")
-               |> String.split("-")
-    Map.merge(hash, %{"wish_age" => wish_age})
-  end
-
-  defp parse_wish_age(hash) do
-    hash
   end
 
   defp parse_client(client) do
