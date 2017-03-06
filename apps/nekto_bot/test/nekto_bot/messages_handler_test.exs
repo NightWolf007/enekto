@@ -9,14 +9,14 @@ defmodule NektoBot.MessagesHandlerTest do
   setup do
     {:ok, gen_event} = GenEvent.start_link
     :ok = GenEvent.add_handler(gen_event, MessagesHandler,
-                               %{controller: "PID#controller"})
+                               %{controller: "PID#controller", chats: %{}})
     {:ok, gen_event: gen_event, controller: "PID#controller"}
   end
 
   describe "Nekto.MessagesHandler.handle_event(:message)/1" do
     test "it sends parsed message to controller",
          %{gen_event: ge, controller: controller} do
-      message = %{text: "/send A hello"}
+      message = %{text: "/send A hello", chat: %{id: 12345}}
       with_mock Controller, [exec: fn(_, _, _) -> :ok end] do
         :ok = GenEvent.notify(ge, {:message, message})
         :ok = GenEvent.remove_handler(ge, MessagesHandler, []) # wait
@@ -26,7 +26,7 @@ defmodule NektoBot.MessagesHandlerTest do
 
     test "it sends unknown_command to controller",
          %{gen_event: ge, controller: controller} do
-      message = %{text: "/unknown A B"}
+      message = %{text: "/unknown A B", chat: %{id: 12345}}
       with_mock Controller, [unknown_command: fn(_, _) -> :ok end] do
         :ok = GenEvent.notify(ge, {:message, message})
         :ok = GenEvent.remove_handler(ge, MessagesHandler, []) # wait
