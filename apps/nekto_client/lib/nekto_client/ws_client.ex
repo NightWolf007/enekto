@@ -27,6 +27,7 @@ defmodule NektoClient.WSClient do
   message - is hash
   """
   def send!(socket, action, message \\ %{}) do
+    IO.puts(message |> Map.merge(%{action: action}) |> Poison.encode!)
     Web.send!(socket,
       {
         :text,

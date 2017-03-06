@@ -41,6 +41,7 @@ defmodule NektoBot.Mixfile do
       {:nekto_client, in_umbrella: true},
       {:nekto, in_umbrella: true},
       {:nadia, "~> 0.4.2"},
+      {:fsm, "~> 0.3"},
       {:excoveralls, "~> 0.6", only: :test}
     ]
   end

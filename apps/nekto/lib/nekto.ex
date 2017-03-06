@@ -91,6 +91,7 @@ defmodule Nekto do
   Starts search for client
   """
   def search(supervisor, client, params) do
+    IO.puts inspect(Search.from_hash(params))
     supervisor
     |> Supervisor.sender(client)
     |> Sender.search(Search.from_hash(params))
